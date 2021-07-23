@@ -1,0 +1,9 @@
+#TELEGRAM BOT TOKEN
+bot_token=""
+
+#TELEGRAM CHAT_ID OF PEOPLE TO NOTIFY
+CHAT_ID=[""] 
+
+pincodes=["275301"]
+
+age=25
