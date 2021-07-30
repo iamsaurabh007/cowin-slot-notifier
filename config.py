@@ -1,9 +1,13 @@
 #TELEGRAM BOT TOKEN
-bot_token=""
+bot_token="1793204969:AAFSu0X5LqU7GKz3YW6gu6g2Xl-WEpHVPHs"
 
 #TELEGRAM CHAT_ID OF PEOPLE TO NOTIFY
-CHAT_ID=[""] 
+CHAT_ID=["663914572"] 
 
-pincodes=["275301"]
-
+DOSE1=True
+DOSE2=False
+pincodes=["275101"]
 age=25
+
+
+LOGS="s.log"

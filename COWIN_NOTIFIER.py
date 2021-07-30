@@ -2,6 +2,11 @@ import requests
 from datetime import datetime, timedelta
 import time
 import config
+import sys
+import logging
+
+logging.basicConfig(level=logging.INFO, filename=config.LOGS, format='%(asctime)s-%(levelname)s-%(message)s')
+logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
 
 age = config.age
 pincodes = config.pincodes
@@ -12,14 +17,16 @@ print(pincodes)
 NOTIFICATION_FLAG=1
 
 def telegram_bot_sendtext(bot_message,bot_chatID):
-    
-    bot_token = config.bot_token
-    send_text = 'https://api.telegram.org/bot' + bot_token + '/sendMessage?chat_id=' + bot_chatID + '&parse_mode=Markdown&text=' + bot_message
+    try:
+        bot_token = config.bot_token
+        send_text = 'https://api.telegram.org/bot' + bot_token + '/sendMessage?chat_id=' + bot_chatID + '&parse_mode=Markdown&text=' + bot_message
 
-    response = requests.get(send_text)
+        response = requests.get(send_text)
 
-    return response.json()
-
+        return response.json()
+    except Exception as e:
+        #logging.error('Unable to notify due to {}'.format(e),exc_info=True )
+        print("UNABLE TO NOTIFY")
 
 while True:
     counter = 0   
@@ -31,7 +38,8 @@ while True:
         header = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.76 Safari/537.36'} 
         try:
             result = requests.get(URL, headers=header)
-        except:
+        except Exception as e:
+            #logging.error('Unable to get availability due to {} '.format(e),exc_info=True)
             print("NO/POOR INTERNET CONNECTION ON  ",datetime.now())
             continue
         #print(result,given_date) 
@@ -41,7 +49,12 @@ while True:
                 if(print_flag.lower() =='y'):
                     for center in response_json["centers"]:
                         for session in center["sessions"]:
-                            if (session["min_age_limit"] <= age and session["available_capacity"] > 0 ) :
+                            f=False
+                            if (config.DOSE2 and session["available_capacity_dose2"] > 0):
+                                f=True
+                            if (config.DOSE1 and session["available_capacity_dose1"] > 0):
+                                f=True
+                            if (session["min_age_limit"] <= age and session["available_capacity"] > 0 and f ):
                                 msg='FOR AGE {} :\n'.format(age)
                                 print('Pincode: ' + pincode)
                                 msg+='Pincode: ' + pincode+"\n"
@@ -64,29 +77,20 @@ while True:
                                     msg+="Vaccine type: " + session["vaccine"]
                                 print("\n")
                                 msg+="\n\nAS CHECKED ON: "+str(datetime.now())
-                                try:
-                                    telegram_bot_sendtext(msg,CHAT_ID[0])
-                                    #telegram_bot_sendtext(msg,CHAT_ID[1])
-                                except:
-                                    pass
+                                telegram_bot_sendtext(msg,CHAT_ID[0])
+                                #telegram_bot_sendtext(msg,CHAT_ID[1])
                                 counter = counter + 1
         else:
             print(result)
     if not counter:
         if not NOTIFICATION_FLAG:
-            try:
-                telegram_bot_sendtext(":( MISSED THIS TIME :( ",CHAT_ID[0])
-                #telegram_bot_sendtext(":( MISSED THIS TIME :( ",CHAT_ID[1])
-            except Exception as e:
-                print("UNABLE TO NOTIFY DUE TO ERROR",e)
+            telegram_bot_sendtext(":( MISSED THIS TIME :( ",CHAT_ID[0])
+            #telegram_bot_sendtext(":( MISSED THIS TIME :( ",CHAT_ID[1])
             NOTIFICATION_FLAG=1
         print("No Vaccination slot available! as checked on",datetime.now())
     else:
-        try:
-            telegram_bot_sendtext(":) VACCINE AVAILABLE, BOOK YOUR SLOT ASAP :)",CHAT_ID[0])
-            #telegram_bot_sendtext(":) VACCINE AVAILABLE, BOOK YOUR SLOT ASAP :)",CHAT_ID[1])
-        except Exception as e:
-            print("UNABLE TO NOTIFY DUE TO ERROR",e)
+        telegram_bot_sendtext(":) VACCINE AVAILABLE, BOOK YOUR SLOT ASAP :)",CHAT_ID[0])
+        #telegram_bot_sendtext(":) VACCINE AVAILABLE, BOOK YOUR SLOT ASAP :)",CHAT_ID[1])
         NOTIFICATION_FLAG=0
         print("Vaccination slot AVAILABLE AND NOTIFIED! on ",datetime.now())
 
